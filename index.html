@@ -1000,6 +1000,29 @@
   <!-- MAIN JS APPLICATION ARCHITECTURE -->
   <!-- ========================================== -->
   <script>
+    
+    if ('serviceWorker' in navigator) {
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!refreshing) {
+        refreshing = true;
+        window.location.reload(); // Auto-refresh when new SW takes control
+      }
+    });
+
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      reg.onupdatefound = () => {
+        const worker = reg.installing;
+        worker.onstatechange = () => {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            // New version available! Optional: Show a UI toast like "Update Available"
+            console.log("New version detected, updating...");
+          }
+        };
+      };
+    });
+  }
+    
  if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
