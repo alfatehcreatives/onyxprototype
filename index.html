@@ -1,0 +1,2347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OnyxPOS - Multi-Business Hub</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for Premium Sans Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"Space Grotesk"', 'monospace']
+          },
+          colors: {
+            pureBlack: '#000000',
+            pureWhite: '#FFFFFF',
+            vibrantGreen: '#00E676',
+            vibrantRed: '#FF1744'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Premium High Contrast Light Variable Styling Only */
+    :root {
+      --bg-main: #FAFAFA;
+      --bg-panel: #FFFFFF;
+      --bg-element: #F4F4F5;
+      --border-color: #E4E4E7;
+      --text-main: #000000;
+      --text-muted: #71717A;
+      --accent-color: #000000;
+      --accent-text: #FFFFFF;
+    }
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+    .panel-card {
+      background-color: var(--bg-panel);
+      border-color: var(--border-color);
+    }
+    .element-card {
+      background-color: var(--bg-element);
+    }
+    .text-muted {
+      color: var(--text-muted);
+    }
+    .border-theme {
+      border-color: var(--border-color);
+    }
+    /* Hide scrollbars but keep functionality */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    /* Printing Frame Custom CSS for POS & Thermal */
+    @media print {
+      @page { margin: 0; }
+      body * { visibility: hidden; }
+      body { background: #FFF !important; color: #000 !important; }
+      #printArea, #printArea * { visibility: visible; }
+      #printArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col lg:flex-row antialiased overflow-x-hidden font-sans">
+
+  <!-- ========================================== -->
+  <!-- MOBILE HEADER -->
+  <!-- ========================================== -->
+  <div class="lg:hidden w-full panel-card border-b border-theme p-5 flex items-center justify-between z-30 sticky top-0">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-black text-white rounded-xl">
+        <i data-lucide="store" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="font-extrabold text-base tracking-tight text-black">OnyxPOS</h1>
+        <p class="text-[9px] tracking-widest uppercase font-bold text-muted">Enterprise</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="mobileMenuBtn" class="p-2 bg-zinc-200 rounded-xl text-black">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- SIDEBAR (Desktop & Mobile Drawer) -->
+  <!-- ========================================== -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 -translate-x-full lg:translate-x-0 lg:static w-72 panel-card border-r border-theme flex flex-col shrink-0 z-40 transition-transform duration-350 ease-in-out h-screen">
+    
+    <!-- Header Block (Desktop Only) -->
+    <div class="hidden lg:flex p-6 border-b border-theme items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="p-2.5 bg-black text-white rounded-2xl shadow-xl">
+          <i data-lucide="store" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="font-extrabold text-lg tracking-tight text-black">OnyxPOS</h1>
+          <p class="text-[10px] tracking-widest uppercase font-bold text-muted">Enterprise Hub</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Close Trigger -->
+    <div class="lg:hidden p-4 flex justify-end border-b border-theme">
+      <button id="closeSidebarBtn" class="p-1.5 rounded-xl hover:bg-zinc-200 text-black">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- Active Business Swapper -->
+    <div class="p-5 border-b border-theme bg-opacity-20 bg-black">
+      <label class="block text-[10px] uppercase tracking-wider font-extrabold text-muted mb-2">Active Business</label>
+      <div class="relative mb-2">
+        <select id="businessSelector" class="w-full bg-transparent border border-theme rounded-xl p-3 text-xs font-semibold focus:ring-1 focus:ring-current outline-none cursor-pointer appearance-none text-black">
+          <!-- Dynamic businesses injected here -->
+        </select>
+        <div class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
+          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+        </div>
+      </div>
+      <button onclick="openBusinessModal()" class="w-full mt-2 bg-transparent hover:bg-zinc-200 border border-theme text-black text-[11px] font-bold py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        Add Business
+      </button>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="flex-1 p-5 space-y-1.5 overflow-y-auto no-scrollbar">
+      <p class="text-[9px] uppercase tracking-widest font-extrabold text-muted px-2 mb-2">Operations</p>
+      
+      <button onclick="switchTab('register')" id="nav-register" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-[16px] text-xs font-bold transition-all bg-black text-white">
+        <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+        <span>POS Cashier</span>
+      </button>
+
+      <button onclick="switchTab('inventory')" id="nav-inventory" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-[16px] text-xs font-bold transition-all text-muted hover:bg-zinc-200 hover:text-black">
+        <i data-lucide="package" class="w-4 h-4"></i>
+        <span>Stock Vault</span>
+      </button>
+
+      <button onclick="switchTab('credit')" id="nav-credit" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-[16px] text-xs font-bold transition-all text-muted hover:bg-zinc-200 hover:text-black">
+        <i data-lucide="credit-card" class="w-4 h-4"></i>
+        <span>Credit Ledger</span>
+      </button>
+
+      <button onclick="switchTab('calculator')" id="nav-calculator" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-[16px] text-xs font-bold transition-all text-muted hover:bg-zinc-200 hover:text-black">
+        <i data-lucide="trending-up" class="w-4 h-4"></i>
+        <span>Profit Margin Tool</span>
+      </button>
+
+      <button onclick="switchTab('reports')" id="nav-reports" class="w-full flex items-center gap-3.5 px-4 py-3.5 rounded-[16px] text-xs font-bold transition-all text-muted hover:bg-zinc-200 hover:text-black">
+        <i data-lucide="pie-chart" class="w-4 h-4"></i>
+        <span>Business Reports</span>
+      </button>
+    </nav>
+
+    <!-- Sidebar Footer Actions & Watermark -->
+    <div class="p-5 mt-auto space-y-6">
+      
+      
+      <!-- Watermark Blended -->
+      <div class="text-center opacity-40 hover:opacity-100 transition-opacity pb-2">
+        <a href="https://alfatehcreative.agency/" target="_blank" class="text-[9px] font-bold text-muted uppercase tracking-widest leading-relaxed inline-block">
+          Made by Asim Lone<br/>@alfatehcreatives
+        </a>
+      </div>
+      <!-- Hard Reset Database -->
+      <button onclick="hardResetData()" title="Wipe database & restart fresh" class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-xs font-bold transition-all text-vibrantRed bg-vibrantRed/10 hover:bg-vibrantRed/20 border border-vibrantRed/20">
+        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        <span>Wipe Database</span>
+      </button>
+
+
+    </div>
+  </aside>
+
+  <!-- Dark backdrop overlay for mobile menu -->
+  <div id="sidebarOverlay" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden"></div>
+
+  <!-- ========================================== -->
+  <!-- MAIN WORKSPACE -->
+  <!-- ========================================== -->
+  <main class="flex-1 flex flex-col overflow-hidden min-w-0">
+    
+    <!-- Top Header Bar (Unified) -->
+    <header class="panel-card border-b border-theme px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
+      <div>
+        <h2 id="activeTabTitle" class="text-xl lg:text-2xl font-black tracking-tight text-black">POS Cashier</h2>
+        <p class="text-xs text-muted mt-0.5">
+          Active Branch: <span id="headerBusinessName" class="font-extrabold underline text-black">No Business Configured</span>
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3 self-stretch sm:self-auto justify-between sm:justify-end">
+        <!-- Live Clock -->
+        <div class="px-3.5 py-1.5 bg-zinc-100 border border-theme rounded-[16px] text-xs font-bold flex items-center gap-2 text-black">
+          <i data-lucide="calendar" class="w-4 h-4 text-muted"></i>
+          <span id="currentSystemTime">--:--</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- CONTENT BODY (DYNAMICS) -->
+    <!-- ========================================== -->
+    <div class="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6">
+
+      <!-- ========================================== -->
+      <!-- 1. TAB: POS REGISTER / CASHIER -->
+      <!-- ========================================== -->
+      <div id="tab-register" class="tab-pane">
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          
+          <!-- Product Picker Grid -->
+          <div class="xl:col-span-2 space-y-4">
+            
+            <!-- Filters & Categories Toolbar -->
+            <div class="panel-card p-4 rounded-[22px] border border-theme flex flex-col sm:flex-row items-center gap-3">
+              <div class="relative w-full sm:flex-1">
+                <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted w-4 h-4"></i>
+                <input 
+                  type="text" 
+                  id="registerSearch"
+                  oninput="renderRegisterGrid()"
+                  placeholder="Search vault items..."
+                  class="w-full bg-zinc-100 border border-theme rounded-xl py-2 pl-10 pr-4 text-xs font-medium text-black focus:outline-none focus:ring-1 focus:ring-current"
+                />
+              </div>
+              
+              <!-- Quick Category Filter -->
+              <div class="w-full sm:w-auto">
+                <select 
+                  id="registerCategoryFilter" 
+                  onchange="renderRegisterGrid()"
+                  class="w-full bg-zinc-100 border border-theme rounded-xl p-2.5 text-xs font-bold text-black focus:outline-none"
+                >
+                  <option value="All">All Categories</option>
+                </select>
+              </div>
+
+              <!-- Export / PDF Button -->
+              <button onclick="exportViewToPDF('registerItemGrid', 'POS Register Items')" class="px-4 py-2 bg-zinc-100 border border-theme hover:bg-zinc-200 rounded-xl text-xs font-bold flex items-center gap-1.5 text-black" title="Download Register View as PDF">
+                <i data-lucide="file-text" class="w-3.5 h-3.5"></i> PDF
+              </button>
+            </div>
+
+            <!-- Core Grid Container -->
+            <div id="registerItemGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <!-- Dynamically populated register items -->
+            </div>
+          </div>
+
+          <!-- Checkout Ticket Panel -->
+          <div class="space-y-4">
+            <div class="panel-card border border-theme rounded-[22px] flex flex-col overflow-hidden min-h-[500px]">
+              
+              <div class="p-5 border-b border-theme flex justify-between items-center bg-zinc-50">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="receipt" class="text-muted w-5 h-5"></i>
+                  <h3 class="font-bold text-sm tracking-tight text-black">Active Ticket</h3>
+                </div>
+                <span id="cartCountBadge" class="px-2.5 py-1 bg-zinc-200 rounded-full text-[10px] font-extrabold text-black">
+                  0 Items
+                </span>
+              </div>
+
+              <!-- Ticket Basket list -->
+              <div id="cartBasketList" class="flex-1 overflow-y-auto p-5 space-y-3 max-h-[350px]">
+                <!-- Cart items go here -->
+              </div>
+
+              <!-- Checkout parameters and payment action -->
+              <div class="p-5 border-t border-theme bg-zinc-50 space-y-4">
+                <div>
+                  <label class="block text-[10px] text-muted font-black uppercase tracking-wider mb-2">Payment Option</label>
+                  <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setPaymentMethod('Cash')" id="btn-pay-cash" class="py-2.5 bg-black text-white rounded-xl text-xs font-black border border-transparent transition-all">Cash</button>
+                    <button onclick="setPaymentMethod('Card')" id="btn-pay-card" class="py-2.5 bg-zinc-150 text-muted hover:text-black rounded-xl text-xs font-bold border border-theme transition-all">Card</button>
+                    <button onclick="setPaymentMethod('Credit')" id="btn-pay-credit" class="py-2.5 bg-zinc-150 text-muted hover:text-black rounded-xl text-xs font-bold border border-theme transition-all">Credit</button>
+                  </div>
+                </div>
+
+                <!-- Dyn Client field for Credit accounts -->
+                <div id="checkoutCreditDetails" class="hidden animate-fadeIn space-y-1.5">
+                  <label class="block text-[10px] font-bold uppercase tracking-wider text-black">Borrower Name *</label>
+                  <input 
+                    type="text" 
+                    id="checkoutCustomerName"
+                    placeholder="e.g. Robert Stark"
+                    class="w-full bg-zinc-100 border border-theme rounded-xl p-2.5 text-xs font-medium text-black focus:outline-none focus:ring-1 focus:ring-current"
+                  />
+                  <p class="text-[9px] text-muted">This balance is automatically synced inside the Credit tab.</p>
+                </div>
+
+                <!-- Totals -->
+                <div class="space-y-1.5 pt-2 border-t border-theme">
+                  <div class="flex justify-between text-xs text-muted">
+                  <div class="flex justify-between text-sm font-black pt-1 text-black">
+                    <span>Grand Total</span>
+                    <span id="cartTotalText" class="font-mono text-base font-extrabold">0.00</span>
+                  </div>
+                </div>
+
+                <!-- Complete Actions -->
+                <div class="grid grid-cols-5 gap-2">
+                  <button onclick="processCheckout()" class="col-span-4 py-3.5 bg-black text-white hover:scale-[1.01] active:scale-[0.99] font-black rounded-xl text-xs uppercase tracking-wider transition-all">
+                    Process Payment
+                  </button>
+                  <button onclick="triggerReceiptPrint()" class="col-span-1 p-3 bg-zinc-200 hover:bg-zinc-350 text-black rounded-xl text-xs flex items-center justify-center transition-all" title="Generate and Print Receipt">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 2. TAB: INVENTORY / VAULT -->
+      <!-- ========================================== -->
+      <div id="tab-inventory" class="tab-pane hidden">
+        <div class="space-y-4">
+          
+          <!-- Toolbar action -->
+          <div class="panel-card p-4 rounded-[22px] border border-theme flex flex-col md:flex-row items-center justify-between gap-4">
+            
+            <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto md:flex-1">
+              <!-- Search -->
+              <div class="relative w-full sm:w-80">
+                <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted w-4 h-4"></i>
+                <input 
+                  type="text" 
+                  id="inventorySearch"
+                  oninput="renderInventoryTable()"
+                  placeholder="Search SKU catalog..."
+                  class="w-full bg-zinc-100 border border-theme rounded-xl py-2 pl-10 pr-4 text-xs font-medium text-black focus:outline-none"
+                />
+              </div>
+
+              <!-- Categories Filter -->
+              <div class="w-full sm:w-auto flex items-center gap-2">
+                <select 
+                  id="inventoryCategoryFilter" 
+                  onchange="renderInventoryTable()"
+                  class="w-full bg-zinc-100 border border-theme rounded-xl p-2.5 text-xs font-bold text-black focus:outline-none"
+                >
+                  <option value="All">All Categories</option>
+                </select>
+                
+                <!-- Category Creation shortcut icon -->
+                <button onclick="openCategoryModal()" title="Manage/Add Categories" class="p-2.5 bg-zinc-100 border border-theme text-black rounded-xl">
+                  <i data-lucide="folder-open" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="flex items-center gap-2 w-full md:w-auto">
+              <button onclick="exportViewToPDF('inventoryTableBody', 'Inventory Report')" class="px-4 py-3 bg-zinc-100 border border-theme hover:bg-zinc-200 rounded-xl text-xs font-bold flex items-center gap-1.5 text-black">
+                <i data-lucide="file-text" class="w-4 h-4"></i>
+                Export Report
+              </button>
+              <button onclick="openInventoryModal(false)" class="flex-1 md:flex-none px-5 py-3 bg-black text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+                <i data-lucide="plus" class="w-4 h-4"></i>
+                Add Product
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Main Inventory Board Table -->
+          <div class="panel-card rounded-[22px] border border-theme overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse min-w-[800px]">
+                <thead>
+                  <tr class="bg-zinc-100 border-b border-theme">
+                    <th class="p-4 text-[10px] font-bold text-muted uppercase tracking-wider">Product Catalog ID</th>
+                    <th class="p-4 text-[10px] font-bold text-muted uppercase tracking-wider">Category</th>
+                    <th class="p-4 text-[10px] font-bold text-muted uppercase tracking-wider">Purchase Cost</th>
+                    <th class="p-4 text-[10px] font-bold text-muted uppercase tracking-wider">Retail Checkout Price</th>
+                    <th class="p-4 text-[10px] font-bold text-muted uppercase tracking-wider text-center">In Stock</th>
+                    <th class="p-4 text-[10px] font-bold text-muted uppercase tracking-wider">Auto Stamps (Saved / Updated)</th>
+                    <th class="p-4 text-[10px] font-bold text-muted uppercase tracking-wider text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryTableBody" class="divide-y divide-theme text-xs text-black">
+                  <!-- Dynamic inventory row entries -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 3. TAB: CREDIT LEDGER -->
+      <!-- ========================================== -->
+      <div id="tab-credit" class="tab-pane hidden">
+        <div class="space-y-6">
+          
+          <!-- Core Credit Dashboard Numbers -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <div class="panel-card border border-theme rounded-[22px] p-5 flex items-center justify-between">
+              <div class="space-y-1">
+                <span class="text-[10px] text-muted uppercase tracking-wider font-bold block">We Owe (Account Payables)</span>
+                <p id="totalPayableText" class="text-2xl font-black text-vibrantRed font-mono">0.00</p>
+                <p class="text-[9px] text-muted">Total liabilities from bulk buys</p>
+              </div>
+              <div class="p-3 bg-vibrantRed/10 rounded-2xl text-vibrantRed border border-vibrantRed/15">
+                <i data-lucide="trending-up" class="w-6 h-6"></i>
+              </div>
+            </div>
+
+            <div class="panel-card border border-theme rounded-[22px] p-5 flex items-center justify-between">
+              <div class="space-y-1">
+                <span class="text-[10px] text-muted uppercase tracking-wider font-bold block">Owed to Us (Receivables)</span>
+                <p id="totalReceivableText" class="text-2xl font-black text-vibrantGreen font-mono">0.00</p>
+                <p class="text-[9px] text-muted">Accumulated client ledger balance</p>
+              </div>
+              <div class="p-3 bg-vibrantGreen/10 rounded-2xl text-vibrantGreen border border-vibrantGreen/15">
+                <i data-lucide="trending-down" class="w-6 h-6"></i>
+              </div>
+            </div>
+
+            <div class="panel-card border border-theme rounded-[22px] p-5 flex items-center justify-between">
+              <div class="space-y-1">
+                <span class="text-[10px] text-muted uppercase tracking-wider font-bold block">Net Position Balance</span>
+                <p id="netLiquidityText" class="text-2xl font-black font-mono">0.00</p>
+                <p class="text-[9px] text-muted">Net leverage standing value</p>
+              </div>
+              <div class="p-3 bg-zinc-200 rounded-2xl border border-theme">
+                <i data-lucide="scale" class="w-6 h-6 text-muted"></i>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Controls panel -->
+          <div class="panel-card p-4 rounded-[22px] border border-theme flex items-center justify-between">
+            <h3 class="font-extrabold text-xs uppercase tracking-wider text-black">Consolidated Credit Log</h3>
+            <div class="flex items-center gap-2">
+              <button onclick="exportViewToPDF('tab-credit', 'Credit Ledger')" class="px-4 py-2.5 bg-zinc-100 border border-theme hover:bg-zinc-200 text-black rounded-xl text-xs font-bold flex items-center gap-1.5">
+                <i data-lucide="file-text" class="w-4 h-4"></i> Export PDF
+              </button>
+              <button onclick="openCreditModal()" class="px-4 py-2.5 bg-black text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md">
+                <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                Add Manual Log
+              </button>
+            </div>
+          </div>
+
+          <!-- Side-by-Side Dual Ledgers -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Receivables Board -->
+            <div class="panel-card border border-theme rounded-[22px] p-5 space-y-4">
+              <div class="flex items-center justify-between border-b border-theme pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-vibrantGreen"></span>
+                  <h4 class="font-extrabold text-xs uppercase tracking-wider text-black">Owed To Us (Receivables)</h4>
+                </div>
+                <span id="receivablesCountBadge" class="text-xs font-bold text-muted">0 Items</span>
+              </div>
+              <div id="receivablesList" class="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar">
+                <!-- Dynamically populated customer outstanding cards -->
+              </div>
+            </div>
+
+            <!-- Payables Board -->
+            <div class="panel-card border border-theme rounded-[22px] p-5 space-y-4">
+              <div class="flex items-center justify-between border-b border-theme pb-3">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-vibrantRed"></span>
+                  <h4 class="font-extrabold text-xs uppercase tracking-wider text-black">We Owe (Account Payables)</h4>
+                </div>
+                <span id="payablesCountBadge" class="text-xs font-bold text-muted">0 Items</span>
+              </div>
+              <div id="payablesList" class="space-y-3 max-h-[400px] overflow-y-auto no-scrollbar">
+                <!-- Dynamically populated supplier balance cards -->
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 4. TAB: PROFIT MARGIN CALCULATOR -->
+      <!-- ========================================== -->
+      <div id="tab-calculator" class="tab-pane hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Sandbox Estimator Tool -->
+          <div class="panel-card border border-theme rounded-[22px] p-5 space-y-4 h-fit">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-black text-base text-black">Margin Sandbox</h3>
+                <p class="text-xs text-muted">Design projections and mock up retail calculations instantly.</p>
+              </div>
+              <button onclick="exportViewToPDF('tab-calculator', 'Profit Estimations')" class="p-2.5 bg-zinc-100 border border-theme rounded-xl text-black" title="Print Margin Sheets">
+                <i data-lucide="printer" class="w-4 h-4 text-muted"></i>
+              </button>
+            </div>
+
+            <!-- Selector Template Dropdown -->
+            <div class="space-y-1.5">
+              <label class="block text-[10px] text-muted uppercase tracking-wider font-bold">Import Template from Vault</label>
+              <select 
+                id="calcVaultImport" 
+                onchange="handleCalcTemplateImport()"
+                class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-bold text-black focus:outline-none"
+              >
+                <!-- Dynamically filled with products -->
+              </select>
+            </div>
+
+            <hr class="border-theme" />
+
+            <!-- Sandbox Parameters form -->
+            <div class="space-y-3.5">
+              <div>
+                <label class="block text-[10px] text-muted uppercase font-bold">Concept/Product Label</label>
+                <input 
+                  type="text" 
+                  id="calcLabel" 
+                  placeholder="Custom conceptual item" 
+                  oninput="updateSandboxEstimations()"
+                  class="w-full bg-zinc-100 border border-theme rounded-xl px-3 py-2 text-xs font-semibold text-black focus:outline-none"
+                />
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-[10px] text-muted uppercase font-bold">Purchase Cost</label>
+                  <input 
+                    type="number" 
+                    id="calcCost" 
+                    placeholder="0.00" 
+                    oninput="updateSandboxEstimations()"
+                    class="w-full bg-zinc-100 border border-theme rounded-xl px-3 py-2 text-xs font-semibold text-black focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] text-muted uppercase font-bold">Selling Price</label>
+                  <input 
+                    type="number" 
+                    id="calcSell" 
+                    placeholder="0.00" 
+                    oninput="updateSandboxEstimations()"
+                    class="w-full bg-zinc-100 border border-theme rounded-xl px-3 py-2 text-xs font-semibold text-black focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[10px] text-muted uppercase font-bold">Calculated Sales Qty</label>
+                <input 
+                  type="number" 
+                  id="calcQty" 
+                  value="1" 
+                  oninput="updateSandboxEstimations()"
+                  class="w-full bg-zinc-100 border border-theme rounded-xl px-3 py-2 text-xs font-semibold text-black focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <!-- Calculated Breakdown Showcase -->
+            <div class="bg-zinc-100 rounded-xl p-4 border border-theme space-y-3">
+              <span class="text-[9px] text-muted uppercase font-black tracking-widest block">Sandbox Calculations</span>
+              
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span class="text-muted text-[10px]">Total Outflow Cost:</span>
+                  <p id="sandboxTotalCostText" class="font-bold font-mono text-black">0.00</p>
+                </div>
+                <div>
+                  <span class="text-muted text-[10px]">Total Gross Cash:</span>
+                  <p id="sandboxTotalRevenueText" class="font-bold font-mono text-black">0.00</p>
+                </div>
+              </div>
+
+              <div class="border-t border-theme pt-3 flex justify-between items-center">
+                <div>
+                  <span class="text-[10px] text-muted font-bold block">Gross Estimated Profit</span>
+                  <p id="sandboxProfitText" class="text-lg font-black font-mono">0.00</p>
+                </div>
+                <span id="sandboxMarginBadge" class="px-2 py-1 bg-vibrantGreen/10 text-vibrantGreen border border-vibrantGreen/15 rounded-lg text-[10px] font-extrabold font-mono">
+                  0.0% Margin
+                </span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Realized Profits Checkout Stream Logs -->
+          <div class="lg:col-span-2 panel-card border border-theme rounded-[22px] p-5 space-y-4">
+            <div>
+              <h3 class="font-black text-base text-black">Completed Checkout Margin Streams</h3>
+              <p class="text-xs text-muted">Real-time analytical reporting displaying accurate margin generation.</p>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse min-w-[500px]">
+                <thead>
+                  <tr class="bg-zinc-100 border-b border-theme">
+                    <th class="p-3 text-[10px] font-bold text-muted uppercase">Timestamp</th>
+                    <th class="p-3 text-[10px] font-bold text-muted uppercase">Product Info</th>
+                    <th class="p-3 text-[10px] font-bold text-muted uppercase text-center">Qty Sold</th>
+                    <th class="p-3 text-[10px] font-bold text-muted uppercase">Margin</th>
+                    <th class="p-3 text-[10px] font-bold text-muted uppercase text-right">Realized Net Profit</th>
+                  </tr>
+                </thead>
+                <tbody id="realizedProfitLogs" class="divide-y divide-theme text-xs text-black">
+                  <!-- Dynamic checkouts metrics stream -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========================================== -->
+      <!-- 5. TAB: REPORTS -->
+      <!-- ========================================== -->
+      <div id="tab-reports" class="tab-pane hidden">
+        <div class="space-y-6">
+          
+          <!-- Unified KPI dashboard numbers -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-black">
+            
+            <div class="panel-card border border-theme rounded-[22px] p-5 flex flex-col justify-between">
+              <span class="text-[10px] text-muted uppercase tracking-wider font-extrabold">Gross Sales Revenue</span>
+              <div class="mt-4">
+                <p id="kpiGrossRevenue" class="text-2xl font-black font-mono text-black">0.00</p>
+                <p class="text-[9px] text-muted mt-1">Sum value of checkout tickets</p>
+              </div>
+            </div>
+
+            <div class="panel-card border border-theme rounded-[22px] p-5 flex flex-col justify-between">
+              <span class="text-[10px] text-muted uppercase tracking-wider font-extrabold">Net Profit</span>
+              <div class="mt-4">
+                <p id="kpiNetProfit" class="text-2xl font-black text-vibrantGreen font-mono">0.00</p>
+                <p class="text-[9px] text-muted mt-1">Sales minus stock cost</p>
+              </div>
+            </div>
+
+            <div class="panel-card border border-theme rounded-[22px] p-5 flex flex-col justify-between">
+              <span class="text-[10px] text-muted uppercase tracking-wider font-extrabold">Average Sales Margin</span>
+              <div class="mt-4">
+                <p id="kpiAverageMargin" class="text-2xl font-black text-current font-mono font-bold text-black">0.0%</p>
+                <p class="text-[9px] text-muted mt-1">Overall profitability indicator</p>
+              </div>
+            </div>
+
+            <div class="panel-card border border-theme rounded-[22px] p-5 flex flex-col justify-between">
+              <span class="text-[10px] text-muted uppercase tracking-wider font-extrabold">Stock Health Warnings</span>
+              <div class="mt-4">
+                <p id="kpiLowStockCount" class="text-2xl font-black text-vibrantRed font-mono">0</p>
+                <p class="text-[9px] text-muted mt-1">Items with low quantities</p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Dynamic visual charting streams -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Category contribution charting breakdown -->
+            <div class="panel-card border border-theme rounded-[22px] p-5 space-y-4">
+              <div>
+                <h4 class="font-extrabold text-xs uppercase tracking-wider text-black">Gross Category Breakdown</h4>
+                <p class="text-[11px] text-muted">Proportional contributions of categories to overall revenue.</p>
+              </div>
+              <div id="categoryChartList" class="space-y-4">
+                <!-- Dynamically constructed categories bar charts -->
+              </div>
+            </div>
+
+            <!-- Liabilities & Debt Risk analysis gauge -->
+            <div class="panel-card border border-theme rounded-[22px] p-5 space-y-4">
+              <div>
+                <h4 class="font-extrabold text-xs uppercase tracking-wider text-black">Credit Allocation Balance Health</h4>
+                <p class="text-[11px] text-muted">Comparing risk index between outstanding debt liabilities and collectibles.</p>
+              </div>
+
+              <!-- Graphic comparative progress scale -->
+              <div class="space-y-6">
+                <div class="w-full h-8 bg-zinc-100 rounded-xl overflow-hidden border border-theme flex relative" id="comparativeRiskBar">
+                  <!-- Dynamic comparative sub-bars injected here -->
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                  <div class="bg-vibrantGreen/10 border border-vibrantGreen/20 p-3.5 rounded-xl">
+                    <span class="text-[9px] text-vibrantGreen uppercase font-black block">Receivables Allocation</span>
+                    <p id="riskCardReceivables" class="text-base font-black font-mono text-black">0.00</p>
+                    <span class="text-[9px] text-muted">Customer outstanding tab asset liquidity</span>
+                  </div>
+
+                  <div class="bg-vibrantRed/10 border border-vibrantRed/20 p-3.5 rounded-xl">
+                    <span class="text-[9px] text-vibrantRed uppercase font-black block">Payables Allocation</span>
+                    <p id="riskCardPayables" class="text-base font-black font-mono text-black">0.00</p>
+                    <span class="text-[9px] text-muted">Outstanding operational liabilities owed</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- Direct Reports PDF & Printable Footer link -->
+          <div class="flex flex-col sm:flex-row items-center justify-between p-4 bg-zinc-100 border border-theme rounded-[22px] gap-4">
+            <span class="text-xs text-muted">
+              Welfare Analysis & Financial accounting statement.
+            </span>
+            <button onclick="exportViewToPDF('tab-reports', 'Financial Performance Report')" class="px-5 py-2.5 bg-black text-white font-black text-xs uppercase tracking-wider rounded-xl flex items-center gap-1.5 hover:scale-105 transition-all">
+              <i data-lucide="printer" class="w-4 h-4"></i>
+              Download PDF Report
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ========================================== -->
+  <!-- MODALS SYSTEM -->
+  <!-- ========================================== -->
+  
+  <!-- 1. MODAL: ADD BUSINESS UNIT -->
+  <div id="modalBusiness" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+    <div class="panel-card border border-theme rounded-[32px] p-6 w-full max-w-md shadow-2xl relative space-y-5">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-black tracking-wide uppercase text-black">Setup Business Hub</h3>
+        <button onclick="closeBusinessModal()" class="p-1.5 rounded-lg hover:bg-zinc-200 text-black">
+          <i data-lucide="x" class="w-5 h-5 text-muted"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Company/Shop Title</label>
+          <input 
+            type="text" 
+            id="modalBusinessName"
+            placeholder="Your Business Name" 
+            class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-current text-black"
+          />
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Trade Industry Style</label>
+          <select 
+            id="modalBusinessType"
+            class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-bold text-black focus:outline-none"
+          >
+            <option value="Retail">General Retailer</option>
+            <option value="Electronics">Electrical Goods</option>
+            <option value="Grocery">Supermarket / Grocery</option>
+            <option value="Apparel">Apparel & Textiles</option>
+            <option value="Hardware">Automotive / Hardware</option>
+          </select>
+        </div>
+
+        <button onclick="saveNewBusiness()" class="w-full py-3.5 bg-black text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg">
+          Deploy Hub Instance
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. MODAL: ADD/EDIT CATALOG PRODUCT -->
+  <div id="modalInventory" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+    <div class="panel-card border border-theme rounded-[32px] p-6 w-full max-w-md shadow-2xl relative space-y-5">
+      <div class="flex justify-between items-center">
+        <h3 id="modalInvTitle" class="text-base font-black tracking-wide uppercase text-black">Initialize Product</h3>
+        <button onclick="closeInventoryModal()" class="p-1.5 rounded-lg hover:bg-zinc-200 text-black">
+          <i data-lucide="x" class="w-5 h-5 text-muted"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Item Name/Description</label>
+          <input 
+            type="text" 
+            id="modalInvName"
+            placeholder="Write any product name here" 
+            class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-current text-black"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Category</label>
+            <select 
+              id="modalInvCategory"
+              class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-bold text-black focus:outline-none"
+            >
+              <!-- Populated via Categories dataset -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">New Category</label>
+            <button onclick="triggerInlineCategoryCreation()" class="w-full py-2.5 bg-zinc-200 border border-theme text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 text-black">
+              <i data-lucide="plus" class="w-3.5 h-3.5"></i> Create
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div class="col-span-1">
+            <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Warehouse Qty</label>
+            <input 
+              type="number" 
+              id="modalInvQty"
+              placeholder="0" 
+              class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-semibold text-black focus:outline-none"
+            />
+          </div>
+          <div class="col-span-1">
+            <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Cost</label>
+            <input 
+              type="number" 
+              step="0.01" 
+              id="modalInvCost"
+              placeholder="0.00" 
+              class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-semibold text-black focus:outline-none"
+            />
+          </div>
+          <div class="col-span-1">
+            <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Sale price</label>
+            <input 
+              type="number" 
+              step="0.01" 
+              id="modalInvSell"
+              placeholder="0.00" 
+              class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-semibold text-black focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <p class="text-[10px] text-muted bg-zinc-100 p-3 rounded-xl border border-theme">
+          <strong>Auto Stamps Warning:</strong> Auto date and time stamp logs dynamically as you finalize edits.
+        </p>
+
+        <button onclick="saveInventoryItem()" class="w-full py-3.5 bg-black text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg">
+          Commit To Vault
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. MODAL: ADD MANUAL CATEGORIES -->
+  <div id="modalCategory" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+    <div class="panel-card border border-theme rounded-[32px] p-6 w-full max-sm shadow-2xl relative space-y-5">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-black uppercase text-black">Manage Categories</h3>
+        <button onclick="closeCategoryModal()" class="p-1.5 rounded-lg hover:bg-zinc-200 text-black">
+          <i data-lucide="x" class="w-5 h-5 text-muted"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Category Name</label>
+          <input 
+            type="text" 
+            id="newCategoryName"
+            placeholder="e.g. Any Category Name" 
+            class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-semibold text-black focus:outline-none"
+          />
+        </div>
+
+        <button onclick="saveNewCategory()" class="w-full py-3 bg-black text-white font-black rounded-xl text-xs uppercase tracking-wide">
+          Add Category
+        </button>
+
+        <hr class="border-theme" />
+
+        <div>
+          <label class="block text-[10px] text-muted uppercase font-bold mb-2">Registered Categories</label>
+          <div id="modalCategoryList" class="space-y-1.5 max-h-[150px] overflow-y-auto no-scrollbar">
+            <!-- Dynamic categories list -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. MODAL: ADD MANUAL CREDIT ENTRY -->
+  <div id="modalCredit" class="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 hidden">
+    <div class="panel-card border border-theme rounded-[32px] p-6 w-full max-w-md shadow-2xl relative space-y-5">
+      <div class="flex justify-between items-center">
+        <h3 class="text-base font-black tracking-wide uppercase text-black">Register Outstanding Credit</h3>
+        <button onclick="closeCreditModal()" class="p-1.5 rounded-lg hover:bg-zinc-200 text-black">
+          <i data-lucide="x" class="w-5 h-5 text-muted"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div>
+          <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Counterparty/Contact Name</label>
+          <input 
+            type="text" 
+            id="modalCreditName"
+            placeholder="Write any name here" 
+            class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-semibold text-black focus:outline-none focus:ring-1 focus:ring-current"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Credit Flow Class</label>
+            <select 
+              id="modalCreditType"
+              class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-bold text-black focus:outline-none"
+            >
+              <option value="owe_us">Owed to Us (Receivables)</option>
+              <option value="we_owe">We Owe (Payables)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Debt Obligation Value</label>
+            <input 
+              type="number" 
+              step="0.01" 
+              id="modalCreditAmount"
+              placeholder="0.00" 
+              class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-semibold text-black focus:outline-none"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[10px] text-muted uppercase font-bold mb-1.5">Context Description Notes</label>
+          <textarea 
+            id="modalCreditDesc"
+            placeholder="Add dynamic contextual explanation regarding the credit agreement details." 
+            rows="3"
+            class="w-full bg-zinc-100 border border-theme rounded-xl p-3 text-xs font-semibold text-black focus:outline-none"
+          ></textarea>
+        </div>
+
+        <button onclick="saveCreditEntry()" class="w-full py-3.5 bg-black text-white font-black rounded-xl text-xs uppercase tracking-wider shadow-lg">
+          Log Ledger Balance
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Banner system -->
+  <div id="customToast" class="fixed bottom-6 right-6 bg-black text-white border border-theme px-5 py-3.5 rounded-[18px] shadow-2xl z-50 flex items-center gap-3 translate-y-20 opacity-0 pointer-events-none transition-all duration-300">
+    <div class="w-2.5 h-2.5 rounded-full bg-vibrantGreen animate-ping"></div>
+    <span id="toastMessage" class="text-xs font-black tracking-wide">Operation Completed</span>
+  </div>
+
+  <!-- Hidden printer viewport context area -->
+  <div id="printArea" class="hidden"></div>
+
+  <!-- ========================================== -->
+  <!-- MAIN JS APPLICATION ARCHITECTURE -->
+  <!-- ========================================== -->
+  <script>
+   if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('SW registered:', reg))
+        .catch(err => console.log('SW registration failed:', err));
+    });
+  }
+
+    // --- DATABASE STATE SCHEME ---
+    let state = {
+      businesses: [],
+      currentBusinessId: '',
+      categories: [], // Shared categories catalog
+      inventory: [],  // [{id, businessId, name, category, costPrice, sellPrice, quantity, dateAdded, dateUpdated}]
+      credits: [],    // [{id, businessId, name, type, amount, desc, date, status}]
+      sales: []       // [{id, businessId, itemName, category, costPrice, sellPrice, quantity, totalProfit, date}]
+    };
+
+    let activeTab = 'register';
+    let currentEditingItem = null;
+    let paymentMethod = 'Cash';
+    let cart = [];
+
+    // --- SETUP & BOOTSTRAP SYSTEM ---
+    window.onload = function() {
+      loadStateFromStorage();
+      
+      // Setup dynamic UI triggers
+      setupClockTrigger();
+      setupSidebarMenuTriggers();
+      
+      // Auto-initialize icons
+      lucide.createIcons();
+
+      if (state.businesses.length === 0) {
+        openBusinessModal();
+      } else {
+        renderGlobalContext();
+      }
+    };
+
+    // --- SYSTEM TIME UPDATER ---
+    function setupClockTrigger() {
+      function tick() {
+        const d = new Date();
+        const pad = (num) => String(num).padStart(2, '0');
+        const formatted = `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        const clockEl = document.getElementById('currentSystemTime');
+        if (clockEl) clockEl.innerText = formatted;
+      }
+      tick();
+      setInterval(tick, 1000);
+    }
+
+    // --- GET FORMATTED TIMESTAMP ---
+    function getSystemTimestamp() {
+      const d = new Date();
+      const pad = (num) => String(num).padStart(2, '0');
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    // --- LOCAL STORAGE CORE CONTROLLER ---
+    function saveStateToStorage() {
+      localStorage.setItem('onyxpos_database_v3_premium', JSON.stringify(state));
+    }
+
+    // --- LOAD FROM STORAGE ---
+    function loadStateFromStorage() {
+      const stored = localStorage.getItem('onyxpos_database_v3_premium');
+      if (stored) {
+        try {
+          state = JSON.parse(stored);
+        } catch (e) {
+          console.error("Critical database corruption on load.", e);
+        }
+      }
+    }
+
+    // --- DATA WIPE CONTROLLER ---
+    function hardResetData() {
+      if (confirm("Are you absolutely sure you want to completely wipe the entire POS database? This action is permanent.")) {
+        localStorage.removeItem('onyxpos_database_v3_premium');
+        state = {
+          businesses: [],
+          currentBusinessId: '',
+          categories: [],
+          inventory: [],
+          credits: [],
+          sales: []
+        };
+        cart = [];
+        saveStateToStorage();
+        window.location.reload();
+      }
+    }
+
+    // --- CUSTOM TOAST MESSAGE SYSTEM ---
+    function showNotification(msg) {
+      const toast = document.getElementById('customToast');
+      const toastMsg = document.getElementById('toastMessage');
+      toastMsg.innerText = msg;
+      
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    // --- RESPONSIVE SIDEBAR MOBILE INTERACTIONS ---
+    function setupSidebarMenuTriggers() {
+      const menuBtn = document.getElementById('mobileMenuBtn');
+      const closeBtn = document.getElementById('closeSidebarBtn');
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+
+      function openDrawer() {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+      }
+
+      function closeDrawer() {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      }
+
+      menuBtn.addEventListener('click', openDrawer);
+      closeBtn.addEventListener('click', closeDrawer);
+      overlay.addEventListener('click', closeDrawer);
+    }
+
+    // --- TAB FLOW CONTROLLER ---
+    function switchTab(targetTab) {
+      activeTab = targetTab;
+      
+      // Toggle CSS display across containers
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.getElementById(`tab-${targetTab}`).classList.remove('hidden');
+
+      // Update sidebar nav highlighting state classes
+      document.querySelectorAll('nav mt-auto button, nav button').forEach(btn => {
+        btn.className = "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-[16px] text-xs font-bold transition-all text-muted hover:bg-zinc-200 hover:text-black";
+      });
+      
+      const activeNav = document.getElementById(`nav-${targetTab}`);
+      if (activeNav) {
+        activeNav.className = "w-full flex items-center gap-3.5 px-4 py-3.5 rounded-[16px] text-xs font-bold transition-all bg-black text-white";
+      }
+
+      // Sync active view Title text
+      const titlesMap = {
+        'register': 'POS Cashier',
+        'inventory': 'Stock Vault Catalog',
+        'credit': 'Unified Liability Ledger',
+        'calculator': 'Sandbox Margin tool',
+        'reports': 'Business Reports & Analytics'
+      };
+      document.getElementById('activeTabTitle').innerText = titlesMap[targetTab] || 'Cashier';
+
+      // Re-trigger visual component rendering
+      renderActiveTabData();
+
+      // Auto close responsive drawer if switching tab on mobile
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      sidebar.classList.add('-translate-x-full');
+      overlay.classList.add('hidden');
+    }
+
+    // --- RE-RENDER ALL DATA PANELS BASED ON CURRENT ACTIVE VIEW ---
+    function renderActiveTabData() {
+      if (activeTab === 'register') {
+        renderRegisterGrid();
+        renderCartBasket();
+      } else if (activeTab === 'inventory') {
+        renderInventoryTable();
+      } else if (activeTab === 'credit') {
+        renderCreditLedger();
+      } else if (activeTab === 'calculator') {
+        renderCalculatorOptions();
+      } else if (activeTab === 'reports') {
+        renderAnalyticsReports();
+      }
+      lucide.createIcons();
+    }
+
+    // --- CORE GLOBAL STATE DROPDOWN REBUILDERS ---
+    function renderGlobalContext() {
+      const bizSelect = document.getElementById('businessSelector');
+      bizSelect.innerHTML = '';
+      
+      state.businesses.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b.id;
+        opt.innerText = `${b.name} (${b.type})`;
+        bizSelect.appendChild(opt);
+      });
+
+      // Bind dynamic selector update listener
+      bizSelect.onchange = function(e) {
+        state.currentBusinessId = e.target.value;
+        cart = []; // Reset shopping cart upon company hop
+        saveStateToStorage();
+        renderGlobalContext();
+      };
+
+      if (!state.currentBusinessId && state.businesses.length > 0) {
+        state.currentBusinessId = state.businesses[0].id;
+      }
+
+      const currentBiz = state.businesses.find(b => b.id === state.currentBusinessId);
+      if (currentBiz) {
+        document.getElementById('headerBusinessName').innerText = currentBiz.name;
+      } else {
+        document.getElementById('headerBusinessName').innerText = 'No Business Configured';
+      }
+
+      // Sync shared global dropdowns
+      rebuildCategoryDropdowns();
+      renderActiveTabData();
+    }
+
+    function rebuildCategoryDropdowns() {
+      const registerCat = document.getElementById('registerCategoryFilter');
+      const invCat = document.getElementById('inventoryCategoryFilter');
+      const modalInvCat = document.getElementById('modalInvCategory');
+
+      // Preserve existing selected value if any
+      const activeRegVal = registerCat ? registerCat.value : 'All';
+      const activeInvVal = invCat ? invCat.value : 'All';
+
+      const optionsMarkupAll = ['<option value="All">All Categories</option>'];
+      const optionsMarkupDirect = [];
+
+      state.categories.forEach(cat => {
+        const rawOpt = `<option value="${cat}">${cat}</option>`;
+        optionsMarkupAll.push(rawOpt);
+        optionsMarkupDirect.push(rawOpt);
+      });
+
+      if (registerCat) {
+        registerCat.innerHTML = optionsMarkupAll.join('');
+        registerCat.value = activeRegVal;
+      }
+      if (invCat) {
+        invCat.innerHTML = optionsMarkupAll.join('');
+        invCat.value = activeInvVal;
+      }
+      if (modalInvCat) {
+        modalInvCat.innerHTML = optionsMarkupDirect.join('');
+      }
+    }
+
+
+    // ==========================================
+    // 1. BUSINESS CONTROLS & MANAGEMENT
+    // ==========================================
+    function openBusinessModal() {
+      document.getElementById('modalBusiness').classList.remove('hidden');
+    }
+
+    function closeBusinessModal() {
+      if (state.businesses.length === 0) {
+        alert("Please set up at least one business branch to use OnyxPOS.");
+        return;
+      }
+      document.getElementById('modalBusiness').classList.add('hidden');
+    }
+
+    function saveNewBusiness() {
+      const nameInp = document.getElementById('modalBusinessName');
+      const typeInp = document.getElementById('modalBusinessType');
+
+      if (!nameInp.value.trim()) {
+        alert("Please provide a valid company/shop name.");
+        return;
+      }
+
+      const newBiz = {
+        id: 'biz_' + Date.now(),
+        name: nameInp.value.trim(),
+        type: typeInp.value
+      };
+
+      state.businesses.push(newBiz);
+      state.currentBusinessId = newBiz.id;
+      
+      saveStateToStorage();
+      
+      // Clean form inputs
+      nameInp.value = '';
+      
+      document.getElementById('modalBusiness').classList.add('hidden');
+      showNotification("Business registered and activated successfully!");
+      renderGlobalContext();
+    }
+
+
+    // ==========================================
+    // 2. CATEGORIES HUB ACTIONS
+    // ==========================================
+    function openCategoryModal() {
+      document.getElementById('modalCategory').classList.remove('hidden');
+      renderCategoriesList();
+    }
+
+    function closeCategoryModal() {
+      document.getElementById('modalCategory').classList.add('hidden');
+    }
+
+    function renderCategoriesList() {
+      const listContainer = document.getElementById('modalCategoryList');
+      listContainer.innerHTML = '';
+
+      if (state.categories.length === 0) {
+        listContainer.innerHTML = '<p class="text-[10px] text-muted py-3 text-center">No categories registered yet.</p>';
+        return;
+      }
+
+      state.categories.forEach(cat => {
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-center bg-zinc-100 px-3 py-2 rounded-lg border border-theme";
+        div.innerHTML = `
+          <span class="text-xs font-bold text-black">${cat}</span>
+          <button onclick="deleteCategory('${cat}')" class="text-muted hover:text-vibrantRed transition-colors">
+            <i data-lucide="trash" class="w-4 h-4"></i>
+          </button>
+        `;
+        listContainer.appendChild(div);
+      });
+      lucide.createIcons();
+    }
+
+    function saveNewCategory() {
+      const inp = document.getElementById('newCategoryName');
+      const val = inp.value.trim();
+
+      if (!val) {
+        alert("Category name cannot be empty.");
+        return;
+      }
+      if (state.categories.includes(val)) {
+        alert("This category already exists inside the database.");
+        return;
+      }
+
+      state.categories.push(val);
+      saveStateToStorage();
+      inp.value = '';
+      
+      rebuildCategoryDropdowns();
+      renderCategoriesList();
+      showNotification(`Category "${val}" registered.`);
+    }
+
+    function deleteCategory(cat) {
+      if (confirm(`Are you sure you want to delete category "${cat}"? Products under this category will need update.`)) {
+        state.categories = state.categories.filter(c => c !== cat);
+        saveStateToStorage();
+        rebuildCategoryDropdowns();
+        renderCategoriesList();
+      }
+    }
+
+    function triggerInlineCategoryCreation() {
+      document.getElementById('modalInventory').classList.add('hidden');
+      openCategoryModal();
+      
+      // Hook closing handler to go back safely
+      const origClose = closeCategoryModal;
+      closeCategoryModal = function() {
+        document.getElementById('modalCategory').classList.add('hidden');
+        document.getElementById('modalInventory').classList.remove('hidden');
+        rebuildCategoryDropdowns();
+        // Reset hook
+        closeCategoryModal = origClose;
+      };
+    }
+
+
+    // ==========================================
+    // 3. INVENTORY PRODUCT MANAGEMENT
+    // ==========================================
+    function openInventoryModal(itemToEdit = false) {
+      if (state.categories.length === 0) {
+        alert("No categories registered! Please setup at least one category to construct inventory products.");
+        openCategoryModal();
+        return;
+      }
+
+      document.getElementById('modalInventory').classList.remove('hidden');
+      rebuildCategoryDropdowns();
+
+      const titleEl = document.getElementById('modalInvTitle');
+      const nameInp = document.getElementById('modalInvName');
+      const catInp = document.getElementById('modalInvCategory');
+      const qtyInp = document.getElementById('modalInvQty');
+      const costInp = document.getElementById('modalInvCost');
+      const sellInp = document.getElementById('modalInvSell');
+
+      if (itemToEdit) {
+        currentEditingItem = itemToEdit;
+        titleEl.innerText = "Edit Stock Product";
+        nameInp.value = itemToEdit.name;
+        catInp.value = itemToEdit.category;
+        qtyInp.value = itemToEdit.quantity;
+        costInp.value = itemToEdit.costPrice;
+        sellInp.value = itemToEdit.sellPrice;
+      } else {
+        currentEditingItem = null;
+        titleEl.innerText = "Add New Product";
+        nameInp.value = '';
+        qtyInp.value = '';
+        costInp.value = '';
+        sellInp.value = '';
+      }
+    }
+
+    function closeInventoryModal() {
+      document.getElementById('modalInventory').classList.add('hidden');
+    }
+
+    function saveInventoryItem() {
+      const name = document.getElementById('modalInvName').value.trim();
+      const category = document.getElementById('modalInvCategory').value;
+      const qty = parseInt(document.getElementById('modalInvQty').value) || 0;
+      const cost = parseFloat(document.getElementById('modalInvCost').value) || 0;
+      const sell = parseFloat(document.getElementById('modalInvSell').value) || 0;
+
+      if (!name) {
+        alert("Please provide a product title.");
+        return;
+      }
+      if (cost < 0 || sell < 0 || qty < 0) {
+        alert("Prices and stock numbers must be absolute positive figures.");
+        return;
+      }
+
+      const stamps = getSystemTimestamp();
+
+      if (currentEditingItem) {
+        // Edit flow
+        state.inventory = state.inventory.map(item => {
+          if (item.id === currentEditingItem.id) {
+            return {
+              ...item,
+              name,
+              category,
+              quantity: qty,
+              costPrice: cost,
+              sellPrice: sell,
+              dateUpdated: stamps
+            };
+          }
+          return item;
+        });
+        showNotification("Product updated successfully.");
+      } else {
+        // Create flow
+        const newItem = {
+          id: 'prod_' + Date.now(),
+          businessId: state.currentBusinessId,
+          name,
+          category,
+          quantity: qty,
+          costPrice: cost,
+          sellPrice: sell,
+          dateAdded: stamps,
+          dateUpdated: stamps
+        };
+        state.inventory.push(newItem);
+        showNotification("Stock item registered successfully.");
+      }
+
+      saveStateToStorage();
+      closeInventoryModal();
+      renderActiveTabData();
+    }
+
+    function deleteInventoryItem(id) {
+      if (confirm("Are you sure you want to remove this catalog product entirely?")) {
+        state.inventory = state.inventory.filter(i => i.id !== id);
+        saveStateToStorage();
+        renderActiveTabData();
+      }
+    }
+
+    function renderInventoryTable() {
+      const tbody = document.getElementById('inventoryTableBody');
+      const search = document.getElementById('inventorySearch').value.toLowerCase();
+      const catFilter = document.getElementById('inventoryCategoryFilter').value;
+
+      tbody.innerHTML = '';
+
+      const filtered = state.inventory.filter(item => {
+        const isCurrentBiz = item.businessId === state.currentBusinessId;
+        const matchesSearch = item.name.toLowerCase().includes(search);
+        const matchesCat = (catFilter === 'All') || (item.category === catFilter);
+        return isCurrentBiz && matchesSearch && matchesCat;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colSpan="7" class="p-8 text-center text-muted">
+              <i data-lucide="archive" class="w-8 h-8 mx-auto mb-2 block"></i>
+              No catalog listings configured under this category branch.
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filtered.forEach(item => {
+        const profitVal = item.sellPrice - item.costPrice;
+        const profitPercent = item.sellPrice > 0 ? ((profitVal / item.sellPrice) * 100).toFixed(1) : '0.0';
+        
+        const row = document.createElement('tr');
+        row.className = "hover:bg-zinc-100 transition-colors";
+        row.innerHTML = `
+          <td class="p-4">
+            <div class="font-extrabold text-sm text-black">${item.name}</div>
+            <div class="text-[9px] text-muted font-mono">ID: ${item.id}</div>
+          </td>
+          <td class="p-4">
+            <span class="px-2.5 py-1 bg-zinc-200 text-black rounded-full text-[10px] font-bold border border-theme">${item.category}</span>
+          </td>
+          <td class="p-4 font-mono font-semibold text-black">${item.costPrice.toFixed(2)}</td>
+          <td class="p-4 font-mono font-black text-black">${item.sellPrice.toFixed(2)}</td>
+          <td class="p-4 text-center">
+            <span class="px-2.5 py-1.5 rounded-xl text-xs font-black font-mono inline-block min-w-[50px] ${
+              item.quantity === 0 ? 'bg-vibrantRed/10 text-vibrantRed border border-vibrantRed/20' :
+              item.quantity <= 10 ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' :
+              'bg-vibrantGreen/10 text-vibrantGreen border border-vibrantGreen/20'
+            }">
+              ${item.quantity}
+            </span>
+          </td>
+          <td class="p-4 space-y-0.5">
+            <div class="text-[10px] text-muted flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
+              Created: ${item.dateAdded}
+            </div>
+            <div class="text-[10px] text-muted flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
+              Updated: ${item.dateUpdated}
+            </div>
+          </td>
+          <td class="p-4 text-right">
+            <div class="flex items-center justify-end gap-1">
+              <button onclick="openInventoryModal(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="p-2 text-black hover:bg-zinc-200 rounded-xl transition-colors">
+                <i data-lucide="pencil" class="w-4 h-4"></i>
+              </button>
+              <button onclick="deleteInventoryItem('${item.id}')" class="p-2 hover:bg-vibrantRed/20 text-muted hover:text-vibrantRed rounded-xl transition-colors">
+                <i data-lucide="trash" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      lucide.createIcons();
+    }
+
+
+    // ==========================================
+    // 4. POS CASHIER TICKET OPERATIONS
+    // ==========================================
+    function renderRegisterGrid() {
+      const grid = document.getElementById('registerItemGrid');
+      const search = document.getElementById('registerSearch').value.toLowerCase();
+      const catFilter = document.getElementById('registerCategoryFilter').value;
+
+      grid.innerHTML = '';
+
+      const items = state.inventory.filter(item => {
+        const isCurrentBiz = item.businessId === state.currentBusinessId;
+        const matchesSearch = item.name.toLowerCase().includes(search);
+        const matchesCat = (catFilter === 'All') || (item.category === catFilter);
+        return isCurrentBiz && matchesSearch && matchesCat;
+      });
+
+      if (items.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full panel-card border border-dashed border-theme rounded-[22px] p-8 text-center text-muted">
+            <i data-lucide="shopping-bag" class="w-10 h-10 mx-auto text-muted mb-2 block"></i>
+            <p class="font-bold text-base">Register Board Empty</p>
+            <p class="text-xs mt-1">Populate items inside the catalog warehouse database first to enable cashier checkouts.</p>
+            <button onclick="switchTab('inventory')" class="mt-4 px-4 py-2.5 bg-black text-white text-xs font-bold rounded-xl inline-flex items-center gap-2 border border-theme">
+              <i data-lucide="plus" class="w-4 h-4"></i> Go to Stock Vault
+            </button>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      items.forEach(item => {
+        const isOutOfStock = item.quantity === 0;
+        const isLowStock = item.quantity <= 10 && !isOutOfStock;
+
+        const card = document.createElement('div');
+        card.className = `panel-card rounded-[22px] border p-4 flex flex-col justify-between transition-all duration-200 cursor-pointer ${
+          isOutOfStock 
+            ? 'opacity-40 bg-zinc-100 cursor-not-allowed' 
+            : 'hover:border-current hover:shadow-lg'
+        }`;
+        
+        if (!isOutOfStock) {
+          card.onclick = () => addProductToCart(item);
+        }
+
+        card.innerHTML = `
+          <div>
+            <div class="flex justify-between items-start mb-2.5">
+              <span class="px-2 py-0.5 bg-zinc-100 border border-theme text-black rounded-full text-[9px] font-bold uppercase tracking-wider truncate max-w-[120px]">
+                ${item.category}
+              </span>
+              ${
+                isOutOfStock ? '<span class="px-2 py-0.5 bg-vibrantRed/15 text-vibrantRed rounded-full text-[9px] font-black uppercase tracking-wider">Out of Stock</span>' :
+                isLowStock ? `<span class="px-2 py-0.5 bg-amber-500/15 text-amber-500 rounded-full text-[9px] font-black uppercase tracking-wider">Low: ${item.quantity}</span>` :
+                `<span class="px-2 py-0.5 bg-vibrantGreen/15 text-vibrantGreen rounded-full text-[9px] font-bold uppercase tracking-wider">Stock: ${item.quantity}</span>`
+              }
+            </div>
+            <h3 class="font-bold text-sm line-clamp-2 min-h-[40px] text-black">${item.name}</h3>
+          </div>
+
+          <div class="mt-4 pt-3 border-t border-theme flex items-center justify-between">
+            <div>
+              <p class="text-[9px] text-muted uppercase tracking-widest">Sale Price</p>
+              <p class="text-base font-black font-mono text-black">${item.sellPrice.toFixed(2)}</p>
+            </div>
+            <div class="p-2 bg-zinc-200 border border-theme text-black rounded-xl transition-colors">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+            </div>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      });
+      lucide.createIcons();
+    }
+
+    function addProductToCart(item) {
+      const existing = cart.find(c => c.id === item.id);
+      
+      // Stock check
+      if (item.quantity <= 0) {
+        alert("This item is currently sold out.");
+        return;
+      }
+
+      if (existing) {
+        if (existing.qtySelected >= item.quantity) {
+          alert(`Cannot process. Quantity would exceed current warehouse limits (${item.quantity} units).`);
+          return;
+        }
+        existing.qtySelected++;
+      } else {
+        cart.push({
+          ...item,
+          qtySelected: 1
+        });
+      }
+
+      showNotification(`"${item.name}" added to ticket.`);
+      renderCartBasket();
+    }
+
+    function updateCartQty(itemId, change) {
+      const cartItem = cart.find(c => c.id === itemId);
+      const originalItem = state.inventory.find(i => i.id === itemId);
+
+      if (!cartItem || !originalItem) return;
+
+      const target = cartItem.qtySelected + change;
+
+      if (target <= 0) {
+        cart = cart.filter(c => c.id !== itemId);
+      } else if (target > originalItem.quantity) {
+        alert(`Insufficient stock. Only ${originalItem.quantity} items available in vault.`);
+      } else {
+        cartItem.qtySelected = target;
+      }
+
+      renderCartBasket();
+    }
+
+    // --- PAYMENT METHOD OPTION ---
+    function setPaymentMethod(method) {
+      paymentMethod = method;
+      
+      // Toggle button UI
+      const methods = ['Cash', 'Card', 'Credit'];
+      methods.forEach(m => {
+        const el = document.getElementById(`btn-pay-${m.toLowerCase()}`);
+        if (m === method) {
+          el.className = "py-2.5 bg-black text-white rounded-xl text-xs font-black border border-transparent transition-all shadow-md";
+        } else {
+          el.className = "py-2.5 bg-zinc-150 text-muted hover:text-black rounded-xl text-xs font-bold border border-theme transition-all";
+        }
+      });
+
+      // Show/Hide credit borrower name input field
+      const credDetails = document.getElementById('checkoutCreditDetails');
+      if (method === 'Credit') {
+        credDetails.classList.remove('hidden');
+      } else {
+        credDetails.classList.add('hidden');
+      }
+    }
+
+    function renderCartBasket() {
+      const container = document.getElementById('cartBasketList');
+      container.innerHTML = '';
+
+      let subtotal = 0;
+      let itemsCount = 0;
+
+      if (cart.length === 0) {
+        container.innerHTML = `
+          <div class="h-full flex flex-col items-center justify-center text-center p-6 text-muted my-auto">
+            <i data-lucide="receipt" class="w-8 h-8 text-muted mb-2"></i>
+            <p class="text-xs font-bold">Ticket is empty</p>
+            <p class="text-[10px] text-muted mt-1 max-w-[180px]">Select active products from the registry on your left.</p>
+          </div>
+        `;
+        document.getElementById('cartCountBadge').innerText = "0 Items";
+        document.getElementById('cartTotalText').innerText = "0.00";
+        lucide.createIcons();
+        return;
+      }
+
+      cart.forEach(c => {
+        subtotal += c.sellPrice * c.qtySelected;
+        itemsCount += c.qtySelected;
+
+        const div = document.createElement('div');
+        div.className = "flex items-center justify-between gap-3 border-b border-theme pb-3";
+        div.innerHTML = `
+          <div class="flex-1 min-w-0">
+            <h4 class="font-bold text-xs truncate text-black">${c.name}</h4>
+            <p class="text-[10px] font-semibold font-mono text-muted">${c.sellPrice.toFixed(2)} / unit</p>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button onclick="updateCartQty('${c.id}', -1)" class="w-6 h-6 rounded-lg bg-zinc-200 border border-theme flex items-center justify-center text-xs font-bold text-black">-</button>
+            <span class="text-xs font-black w-6 text-center font-mono text-black">${c.qtySelected}</span>
+            <button onclick="updateCartQty('${c.id}', 1)" class="w-6 h-6 rounded-lg bg-zinc-200 border border-theme flex items-center justify-center text-xs font-bold text-black">+</button>
+            <button onclick="removeProductFromCart('${c.id}')" class="text-muted hover:text-vibrantRed ml-1.5 transition-colors">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      document.getElementById('cartCountBadge').innerText = `${itemsCount} Items`;
+      document.getElementById('cartTotalText').innerText = `${subtotal.toFixed(2)}`;
+      lucide.createIcons();
+    }
+
+    function removeProductFromCart(itemId) {
+      cart = cart.filter(c => c.id !== itemId);
+      renderCartBasket();
+    }
+
+    function processCheckout() {
+      if (cart.length === 0) {
+        alert("The active checkout ticket is empty.");
+        return;
+      }
+
+      const stamps = getSystemTimestamp();
+      const totalCost = cart.reduce((sum, item) => sum + (item.sellPrice * item.qtySelected), 0);
+
+      if (paymentMethod === 'Credit') {
+        const bName = document.getElementById('checkoutCustomerName').value.trim();
+        if (!bName) {
+          alert("Borrower Name is mandatory for Credit balance sales transactions.");
+          return;
+        }
+
+        const creditRecord = {
+          id: 'cred_' + Date.now(),
+          businessId: state.currentBusinessId,
+          name: bName,
+          type: 'owe_us',
+          amount: totalCost,
+          desc: `Automatic system checkout: ${cart.map(c => `${c.name} (x${c.qtySelected})`).join(', ')}`,
+          date: stamps,
+          status: 'pending'
+        };
+        state.credits.push(creditRecord);
+      }
+
+      cart.forEach(c => {
+        const itemProfit = (c.sellPrice - c.costPrice) * c.qtySelected;
+        
+        const saleRecord = {
+          id: 'sale_' + Date.now() + '_' + c.id,
+          businessId: state.currentBusinessId,
+          itemName: c.name,
+          category: c.category,
+          costPrice: c.costPrice,
+          sellPrice: c.sellPrice,
+          quantity: c.qtySelected,
+          totalProfit: parseFloat(itemProfit.toFixed(2)),
+          date: stamps
+        };
+        state.sales.push(saleRecord);
+
+        // Deduct Warehouse stock levels
+        state.inventory = state.inventory.map(inv => {
+          if (inv.id === c.id) {
+            return {
+              ...inv,
+              quantity: Math.max(0, inv.quantity - c.qtySelected),
+              dateUpdated: stamps
+            };
+          }
+          return inv;
+        });
+      });
+
+      saveStateToStorage();
+      cart = [];
+      document.getElementById('checkoutCustomerName').value = '';
+      setPaymentMethod('Cash'); // Reset to default cash configuration
+      
+      showNotification("POS Transaction checkouts completed successfully!");
+      renderActiveTabData();
+    }
+
+
+    // ==========================================
+    // 5. UNIFIED LIABILITY & CREDIT LEDGER
+    // ==========================================
+    function openCreditModal() {
+      document.getElementById('modalCredit').classList.remove('hidden');
+    }
+
+    function closeCreditModal() {
+      document.getElementById('modalCredit').classList.add('hidden');
+    }
+
+    function saveCreditEntry() {
+      const name = document.getElementById('modalCreditName').value.trim();
+      const type = document.getElementById('modalCreditType').value;
+      const amount = parseFloat(document.getElementById('modalCreditAmount').value) || 0;
+      const desc = document.getElementById('modalCreditDesc').value.trim();
+
+      if (!name) {
+        alert("Please specify borrower or lender counterparty.");
+        return;
+      }
+      if (amount <= 0) {
+        alert("Please set a valid positive debt cash amount.");
+        return;
+      }
+
+      const stamps = getSystemTimestamp();
+
+      const newCredit = {
+        id: 'cred_' + Date.now(),
+        businessId: state.currentBusinessId,
+        name,
+        type,
+        amount,
+        desc: desc || "Manual ledger balance record registration.",
+        date: stamps,
+        status: 'pending'
+      };
+
+      state.credits.push(newCredit);
+      saveStateToStorage();
+      
+      // Clean inputs
+      document.getElementById('modalCreditName').value = '';
+      document.getElementById('modalCreditAmount').value = '';
+      document.getElementById('modalCreditDesc').value = '';
+
+      closeCreditModal();
+      showNotification("Credit ledger balance entry generated.");
+      renderActiveTabData();
+    }
+
+    function toggleCreditLedgerStatus(id) {
+      state.credits = state.credits.map(c => {
+        if (c.id === id) {
+          return {
+            ...c,
+            status: c.status === 'pending' ? 'resolved' : 'pending'
+          };
+        }
+        return c;
+      });
+      saveStateToStorage();
+      renderActiveTabData();
+      showNotification("Ledger balance status toggled.");
+    }
+
+    function deleteCreditRecord(id) {
+      if (confirm("Delete this credit entry from ledger history permanently?")) {
+        state.credits = state.credits.filter(c => c.id !== id);
+        saveStateToStorage();
+        renderActiveTabData();
+      }
+    }
+
+    function renderCreditLedger() {
+      const receivablesList = document.getElementById('receivablesList');
+      const payablesList = document.getElementById('payablesList');
+
+      receivablesList.innerHTML = '';
+      payablesList.innerHTML = '';
+
+      const credits = state.credits.filter(c => c.businessId === state.currentBusinessId);
+
+      let weOweTotal = 0;
+      let oweUsTotal = 0;
+
+      let oweUsCount = 0;
+      let weOweCount = 0;
+
+      credits.forEach(c => {
+        const isResolved = c.status === 'resolved';
+        
+        if (!isResolved) {
+          if (c.type === 'we_owe') weOweTotal += c.amount;
+          else oweUsTotal += c.amount;
+        }
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-[18px] border flex flex-col justify-between transition-all ${
+          isResolved 
+            ? 'bg-zinc-100 border-theme opacity-50' 
+            : c.type === 'owe_us' 
+            ? 'panel-card border-vibrantGreen/15 shadow-sm' 
+            : 'panel-card border-vibrantRed/15 shadow-sm'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex justify-between items-start gap-3">
+            <div>
+              <div class="flex items-center gap-2">
+                <h5 class="font-extrabold text-xs text-black">${c.name}</h5>
+                ${isResolved ? '<span class="px-1.5 py-0.5 bg-zinc-200 rounded text-[8px] uppercase font-black text-muted">Settled</span>' : ''}
+              </div>
+              <p class="text-[11px] text-muted mt-1">${c.desc}</p>
+              <div class="text-[10px] text-muted mt-2 font-semibold flex items-center gap-1">
+                <i data-lucide="calendar" class="w-3.5 h-3.5"></i> ${c.date}
+              </div>
+            </div>
+            
+            <div class="text-right flex flex-col items-end">
+              <p class="text-base font-black font-mono ${c.type === 'owe_us' ? 'text-vibrantGreen' : 'text-vibrantRed'}">${c.amount.toFixed(2)}</p>
+              <div class="mt-3 flex items-center gap-1.5">
+                <button onclick="toggleCreditLedgerStatus('${c.id}')" class="px-2 py-1 bg-zinc-200 text-black border border-theme rounded-[10px] text-[9px] font-black uppercase transition-all">
+                  ${isResolved ? 'Re-open' : 'Settle'}
+                </button>
+                <button onclick="deleteCreditRecord('${c.id}')" class="p-1 text-muted hover:text-vibrantRed rounded transition-colors">
+                  <i data-lucide="trash" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        if (c.type === 'owe_us') {
+          receivablesList.appendChild(card);
+          if (!isResolved) oweUsCount++;
+        } else {
+          payablesList.appendChild(card);
+          if (!isResolved) weOweCount++;
+        }
+      });
+
+      // Set counts
+      document.getElementById('receivablesCountBadge').innerText = `${oweUsCount} Active`;
+      document.getElementById('payablesCountBadge').innerText = `${weOweCount} Active`;
+
+      // Set metrics
+      document.getElementById('totalPayableText').innerText = weOweTotal.toFixed(2);
+      document.getElementById('totalReceivableText').innerText = oweUsTotal.toFixed(2);
+
+      const netPosition = oweUsTotal - weOweTotal;
+      const netEl = document.getElementById('netLiquidityText');
+      netEl.innerText = `${netPosition >= 0 ? '+' : ''}${netPosition.toFixed(2)}`;
+      
+      if (netPosition >= 0) {
+        netEl.className = "text-2xl font-black text-vibrantGreen font-mono";
+      } else {
+        netEl.className = "text-2xl font-black text-vibrantRed font-mono";
+      }
+      lucide.createIcons();
+    }
+
+
+    // ==========================================
+    // 6. PROFIT MARGIN CALCULATOR & REAL-TIME REVENUE
+    // ==========================================
+    function renderCalculatorOptions() {
+      const select = document.getElementById('calcVaultImport');
+      select.innerHTML = '<option value="" disabled selected>-- Select Import Vault Product --</option>';
+
+      const items = state.inventory.filter(i => i.businessId === state.currentBusinessId);
+      items.forEach(i => {
+        const opt = document.createElement('option');
+        opt.value = i.id;
+        opt.innerText = `${i.name} (${i.sellPrice.toFixed(2)})`;
+        select.appendChild(opt);
+      });
+
+      updateSandboxEstimations();
+      renderRealizedMarginalStreams();
+    }
+
+    function handleCalcTemplateImport() {
+      const id = document.getElementById('calcVaultImport').value;
+      const item = state.inventory.find(i => i.id === id);
+
+      if (item) {
+        document.getElementById('calcLabel').value = item.name;
+        document.getElementById('calcCost').value = item.costPrice;
+        document.getElementById('calcSell').value = item.sellPrice;
+        
+        updateSandboxEstimations();
+        showNotification(`Loaded template: ${item.name}`);
+      }
+    }
+
+    function updateSandboxEstimations() {
+      const label = document.getElementById('calcLabel').value || "Conceptual Deal Sandbox";
+      const cost = parseFloat(document.getElementById('calcCost').value) || 0;
+      const sell = parseFloat(document.getElementById('calcSell').value) || 0;
+      const qty = Math.max(1, parseInt(document.getElementById('calcQty').value) || 1);
+
+      const totalCost = cost * qty;
+      const totalRevenue = sell * qty;
+      const grossProfit = totalRevenue - totalCost;
+      const margin = totalRevenue > 0 ? ((grossProfit / totalRevenue) * 100).toFixed(1) : '0.0';
+
+      document.getElementById('sandboxTotalCostText').innerText = totalCost.toFixed(2);
+      document.getElementById('sandboxTotalRevenueText').innerText = totalRevenue.toFixed(2);
+      document.getElementById('sandboxProfitText').innerText = grossProfit.toFixed(2);
+      
+      const badge = document.getElementById('sandboxMarginBadge');
+      badge.innerText = `${margin}% Margin`;
+
+      if (grossProfit >= 0) {
+        badge.className = "px-2 py-1 bg-vibrantGreen/10 text-vibrantGreen border border-vibrantGreen/15 rounded-lg text-[10px] font-extrabold font-mono";
+        document.getElementById('sandboxProfitText').className = "text-lg font-black text-vibrantGreen font-mono";
+      } else {
+        badge.className = "px-2 py-1 bg-vibrantRed/10 text-vibrantRed border border-vibrantRed/15 rounded-lg text-[10px] font-extrabold font-mono";
+        document.getElementById('sandboxProfitText').className = "text-lg font-black text-vibrantRed font-mono";
+      }
+    }
+
+    function renderRealizedMarginalStreams() {
+      const container = document.getElementById('realizedProfitLogs');
+      container.innerHTML = '';
+
+      const sales = state.sales.filter(s => s.businessId === state.currentBusinessId);
+
+      if (sales.length === 0) {
+        container.innerHTML = `
+          <tr>
+            <td colSpan="5" class="p-8 text-center text-muted">
+              <i data-lucide="calculator" class="w-8 h-8 mx-auto mb-2 block"></i>
+              No margins recorded. Process retail sales checkouts first.
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      const sortedSales = [...sales].reverse();
+
+      sortedSales.forEach(s => {
+        const itemProfit = (s.sellPrice - s.costPrice) * s.quantity;
+        const marginPercent = s.sellPrice > 0 ? (((s.sellPrice - s.costPrice) / s.sellPrice) * 100).toFixed(1) : '0.0';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-zinc-100 transition-all border-b border-theme/50 last:border-0";
+        tr.innerHTML = `
+          <td class="p-3 font-mono text-[10px] text-muted">${s.date}</td>
+          <td class="p-3">
+            <div class="font-extrabold text-xs text-black">${s.itemName}</div>
+            <span class="text-[9px] text-muted uppercase font-semibold">${s.category}</span>
+          </td>
+          <td class="p-3 text-center font-bold font-mono text-black">${s.quantity}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 bg-zinc-200 border border-theme text-black rounded text-[9px] font-extrabold font-mono">${marginPercent}%</span>
+          </td>
+          <td class="p-3 text-right">
+            <p class="font-black text-vibrantGreen font-mono text-xs">+${itemProfit.toFixed(2)}</p>
+            <p class="text-[9px] text-muted font-mono">Cost: ${(s.costPrice * s.quantity).toFixed(2)}</p>
+          </td>
+        `;
+        container.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+
+    // ==========================================
+    // 7. ANALYTICS KPI & HISTORICAL AUDITS
+    // ==========================================
+    function renderAnalyticsReports() {
+      const sales = state.sales.filter(s => s.businessId === state.currentBusinessId);
+      const credits = state.credits.filter(c => c.businessId === state.currentBusinessId);
+      const inventory = state.inventory.filter(i => i.businessId === state.currentBusinessId);
+
+      let grossRevenue = 0;
+      let totalCost = 0;
+      let netProfit = 0;
+
+      sales.forEach(s => {
+        grossRevenue += s.sellPrice * s.quantity;
+        totalCost += s.costPrice * s.quantity;
+        netProfit += s.totalProfit;
+      });
+
+      const averageMargin = grossRevenue > 0 ? ((netProfit / grossRevenue) * 100).toFixed(1) : '0.0';
+      const lowStockCount = inventory.filter(i => i.quantity <= 10).length;
+
+      document.getElementById('kpiGrossRevenue').innerText = grossRevenue.toFixed(2);
+      document.getElementById('kpiNetProfit').innerText = netProfit.toFixed(2);
+      document.getElementById('kpiAverageMargin').innerText = `${averageMargin}%`;
+      document.getElementById('kpiLowStockCount').innerText = lowStockCount;
+
+      if (lowStockCount > 0) {
+        document.getElementById('kpiLowStockCount').className = "text-2xl font-black text-vibrantRed font-mono";
+      } else {
+        document.getElementById('kpiLowStockCount').className = "text-2xl font-black text-vibrantGreen font-mono";
+      }
+
+      // Rebuild Category bar contributions
+      const categorySalesMap = {};
+      sales.forEach(s => {
+        categorySalesMap[s.category] = (categorySalesMap[s.category] || 0) + (s.sellPrice * s.quantity);
+      });
+
+      const chartList = document.getElementById('categoryChartList');
+      chartList.innerHTML = '';
+
+      if (Object.keys(categorySalesMap).length === 0) {
+        chartList.innerHTML = '<p class="text-xs text-muted py-6 text-center">No retail sales recorded to plot metrics.</p>';
+      } else {
+        Object.entries(categorySalesMap).forEach(([cat, value]) => {
+          const ratio = grossRevenue > 0 ? ((value / grossRevenue) * 100).toFixed(0) : '0';
+          
+          const wrapper = document.createElement('div');
+          wrapper.className = "space-y-1";
+          wrapper.innerHTML = `
+            <div class="flex justify-between text-xs font-bold text-muted">
+              <span>${cat}</span>
+              <span class="font-mono">${value.toFixed(2)} (${ratio}%)</span>
+            </div>
+            <div class="w-full bg-zinc-100 h-2.5 rounded-full overflow-hidden border border-theme">
+              <div class="bg-black h-full rounded-full transition-all duration-500" style="width: ${ratio}%"></div>
+            </div>
+          `;
+          chartList.appendChild(wrapper);
+        });
+      }
+
+      // Rebuild Credit risk comparison progress bar
+      let payablesUnresolved = 0;
+      let receivablesUnresolved = 0;
+
+      credits.forEach(c => {
+        if (c.status === 'pending') {
+          if (c.type === 'we_owe') payablesUnresolved += c.amount;
+          else receivablesUnresolved += c.amount;
+        }
+      });
+
+      document.getElementById('riskCardReceivables').innerText = receivablesUnresolved.toFixed(2);
+      document.getElementById('riskCardPayables').innerText = payablesUnresolved.toFixed(2);
+
+      const riskBar = document.getElementById('comparativeRiskBar');
+      riskBar.innerHTML = '';
+
+      const totalPool = payablesUnresolved + receivablesUnresolved;
+      if (totalPool === 0) {
+        riskBar.innerHTML = `
+          <div class="w-full h-full bg-zinc-100 flex items-center justify-center text-[10px] text-muted font-bold uppercase tracking-wider">
+            Clear Credit Portfolio Status
+          </div>
+        `;
+      } else {
+        const recPercent = ((receivablesUnresolved / totalPool) * 100).toFixed(0);
+        const payPercent = ((payablesUnresolved / totalPool) * 100).toFixed(0);
+
+        if (receivablesUnresolved > 0) {
+          const bar = document.createElement('div');
+          bar.className = "bg-vibrantGreen h-full flex items-center justify-center text-black text-[9px] font-black transition-all";
+          bar.style.width = `${recPercent}%`;
+          bar.innerText = recPercent > 15 ? `${recPercent}% Rec` : '';
+          riskBar.appendChild(bar);
+        }
+
+        if (payablesUnresolved > 0) {
+          const bar = document.createElement('div');
+          bar.className = "bg-vibrantRed h-full flex items-center justify-center text-white text-[9px] font-black transition-all";
+          bar.style.width = `${payPercent}%`;
+          bar.innerText = payPercent > 15 ? `${payPercent}% Pay` : '';
+          riskBar.appendChild(bar);
+        }
+      }
+    }
+
+
+    // ==========================================
+    // 8. PRINT & EXPORT ENGINE (RECIPIENTS & PDF)
+    // ==========================================
+    
+    // --- PRINT DETAILED CHECOUT RECEIPT (THERMAL PRINTER COMPATIBLE) ---
+    function triggerReceiptPrint() {
+      if (cart.length === 0) {
+        alert("The active checkout ticket is empty. Cannot generate empty receipt.");
+        return;
+      }
+
+      const activeBiz = state.businesses.find(b => b.id === state.currentBusinessId) || { name: 'OnyxPOS Retail Branch', type: 'General Store' };
+      const receiptId = 'REC-' + Math.floor(Math.random() * 900000 + 100000);
+      const subtotal = cart.reduce((sum, item) => sum + (item.sellPrice * item.qtySelected), 0);
+      const stamps = getSystemTimestamp();
+
+      let itemsRows = '';
+      cart.forEach(item => {
+        itemsRows += `
+          <tr style="border-bottom: 1px dashed #000; font-size: 12px;">
+            <td style="padding: 6px 0;">${item.name}<br/><small style="font-size: 10px;">${item.qtySelected} x ${item.sellPrice.toFixed(2)}</small></td>
+            <td style="text-align: right; padding: 6px 0; font-family: monospace;">${(item.sellPrice * item.qtySelected).toFixed(2)}</td>
+          </tr>
+        `;
+      });
+
+      // Compact layout engineered strictly for Thermal 80mm/58mm printers
+      const receiptHTML = `
+        <div style="font-family: monospace; width: 100%; max-width: 300px; margin: 0 auto; color: #000; background: #fff; font-size: 12px; line-height: 1.4;">
+          <div style="text-align: center; margin-bottom: 12px;">
+            <h1 style="font-size: 20px; font-weight: bold; margin: 0; text-transform: uppercase;">${activeBiz.name}</h1>
+            <p style="font-size: 10px; margin: 4px 0 0 0; text-transform: uppercase; border-bottom: 1px dashed #000; padding-bottom: 10px;">${activeBiz.type} Segment</p>
+          </div>
+          
+          <div style="font-size: 10px; margin-bottom: 12px;">
+            <div>TKT NO: ${receiptId}</div>
+            <div>DATE: ${stamps}</div>
+            <div>PAYMENT: ${paymentMethod}</div>
+          </div>
+
+          <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
+            <thead>
+              <tr style="border-bottom: 1px solid #000; font-size: 10px; text-transform: uppercase; text-align: left;">
+                <th style="padding-bottom: 4px;">Item</th>
+                <th style="text-align: right; padding-bottom: 4px;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsRows}
+            </tbody>
+          </table>
+
+          <div style="font-size: 12px; border-top: 1px solid #000; padding-top: 8px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span>Subtotal:</span>
+              <span style="font-family: monospace;">${subtotal.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; margin-top: 4px;">
+              <span>TOTAL:</span>
+              <span style="font-family: monospace;">${subtotal.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div style="text-align: center; font-size: 10px; border-top: 1px dashed #000; padding-top: 12px;">
+            <p style="margin: 0; font-weight: bold;">Thank you for shopping!</p>
+            <p style="margin: 6px 0 0 0; font-size: 9px;">
+              Made by <a href="https://alfatehcreative.agency/" target="_blank" style="color: #000; text-decoration: none; font-weight: bold;">Asim Lone @alfatehcreatives</a>
+            </p>
+          </div>
+        </div>
+      `;
+
+      executePrintJob(receiptHTML);
+    }
+
+    // --- VIEW PDF DOWNLOAD GENERATOR ---
+    function exportViewToPDF(elementId, titleLabel) {
+      const activeBiz = state.businesses.find(b => b.id === state.currentBusinessId) || { name: 'OnyxPOS Branch' };
+      const stamps = getSystemTimestamp();
+      
+      let sourceElement = document.getElementById(elementId);
+      if (!sourceElement) return;
+
+      const printHTML = `
+        <div style="font-family: 'Plus Jakarta Sans', system-ui, sans-serif; padding: 40px; color: #000000; background-color: #ffffff; min-height: 100%;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #000000; padding-bottom: 20px; margin-bottom: 30px;">
+            <div>
+              <h1 style="font-size: 28px; font-weight: 800; margin: 0; text-transform: uppercase;">${activeBiz.name}</h1>
+              <p style="font-size: 12px; color: #71717A; margin: 4px 0 0 0; text-transform: uppercase; letter-spacing: 1px;">Enterprise Audit Summary</p>
+            </div>
+            <div style="text-align: right; font-size: 12px; color: #71717A;">
+              <div><strong>DOCUMENT:</strong> ${titleLabel}</div>
+              <div><strong>DATE GENERATED:</strong> ${stamps}</div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 40px;">
+            <h3 style="font-size: 18px; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; border-bottom: 1px solid #E4E4E7; padding-bottom: 6px;">Report Content Block</h3>
+            <div style="font-size: 13px;">
+              ${sourceElement.outerHTML}
+            </div>
+          </div>
+
+          <div style="text-align: center; border-top: 1px solid #E4E4E7; padding-top: 20px; margin-top: 50px; font-size: 11px; color: #71717A;">
+            <p style="margin: 0; font-weight: 500;">OnyxPOS Premium Offline Ledger Report Statement.</p>
+            <p style="margin: 6px 0 0 0;">
+              Made by <a href="https://alfatehcreative.agency/" target="_blank" style="text-decoration: underline; font-weight: 700; color: #000000;">Asim Lone @alfatehcreatives</a>
+            </p>
+          </div>
+        </div>
+      `;
+
+      executePrintJob(printHTML);
+    }
+
+    // --- UNIVERSAL PRINT/PDF ENGINE CONTROLLER ---
+    function executePrintJob(htmlContent) {
+      const printArea = document.getElementById('printArea');
+      printArea.innerHTML = htmlContent;
+
+      // Remove class hidden briefly, trigger print system, re-hide
+      printArea.classList.remove('hidden');
+      window.print();
+      printArea.classList.add('hidden');
+      printArea.innerHTML = '';
+    }
+  </script>
+</body>
+</html>
+
