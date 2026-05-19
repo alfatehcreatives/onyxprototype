@@ -2,7 +2,7 @@
   "name": "OnyxPOS",
   "short_name": "OnyxPOS",
   "description": "Multi-Business Offline Ledger & POS System",
-  "start_url": "/index.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",
   "theme_color": "#09090b",
