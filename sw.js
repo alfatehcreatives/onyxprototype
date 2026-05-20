@@ -1,27 +1,56 @@
-const CACHE_NAME = 'onyxpos-v5';
+const cacheName = 'onyxPOS-v1.0,1';
+const assets = [
+  './',
+  './index.html',
+  './manifest.json',
+  'https://cdn.tailwindcss.com',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(['./', './index.html'])));
+// Install & Cache Assets
+self.addEventListener('install', e => {
+  e.waitUntil(
+    caches.open(cacheName).then(cache => cache.addAll(assets))
+  );
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (e) => {
+// Cleanup Old Caches
+self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(keys => Promise.all(keys.map(k => k !== CACHE_NAME ? caches.delete(k) : null))),
-    self.clients.claim()
+    caches.keys().then(keys => Promise.all(
+      keys.filter(key => key !== cacheName).map(key => caches.delete(key))
+    ))
   );
+  self.clients.claim();
 });
 
-self.addEventListener('fetch', (e) => {
+// Fetch Strategy: Network falling back to Cache (Best for PWAs)
+self.addEventListener('fetch', e => {
+  // Sirf http/https requests handle karne ke liye (chrome-extension aur local files skip karne ke liye)
+  if (!e.request.url.startsWith('http')) return;
+
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const fetchReq = fetch(e.request).then((res) => {
-        if (res.status === 200) {
-          caches.open(CACHE_NAME).then(cache => cache.put(e.request, res.clone()));
+    fetch(e.request)
+      .then(networkResponse => {
+        // Agar network sahi chal raha hai, toh cache update karo
+        if (networkResponse.status === 200) {
+          const responseClone = networkResponse.clone();
+          caches.open(cacheName).then(cache => cache.put(e.request, responseClone));
         }
-        return res;
-      });
-      return cached || fetchReq;
-    })
+        return networkResponse;
+      })
+      .catch(() => {
+        // Agar network fail ho (offline ho), toh cache se do
+        return caches.match(e.request).then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          // Agar page cache mein bhi nahi hai (pheli baar khol rahe offline mein)
+          if (e.request.mode === 'navigate') {
+            return caches.match('./index.html');
+          }
+        });
+      })
   );
 });
