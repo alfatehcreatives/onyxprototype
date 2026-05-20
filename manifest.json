@@ -1,17 +1,22 @@
 {
-  "name": "OnyxPOS",
-  "short_name": "OnyxPOS",
-  "description": "Multi-Business Offline Ledger & POS System",
+  "name": "Onyx POS",
+  "short_name": "Onyx POS",
+  "description": "Premium POS",
   "start_url": "/",
-  "display": "standalone",
-  "background_color": "#09090b",
-  "theme_color": "#09090b",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "icons": [
+
     {
-      "src": "/icon512.png",
+      "src": "icon512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/jpeg",
+      "purpose": "any"
     }
+  ],
+
   ]
 }
