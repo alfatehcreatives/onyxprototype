@@ -9,7 +9,13 @@
   <!-- Google Fonts for Premium Sans Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="manifest" href="./manifest.json">
+        <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#000000">
+    <!-- iOS Safari PWA Support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Onyx POS">
+<link rel="apple-touch-icon" href="icon512.png">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
@@ -1002,41 +1008,13 @@
   <!-- ========================================== -->
   <script>
     
-    if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-      .then(() => console.log('SW registered'))
-      .catch(err => console.log('SW failed', err));
-  }
-    if ('serviceWorker' in navigator) {
-    let refreshing = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (!refreshing) {
-        refreshing = true;
-        window.location.reload(); // Auto-refresh when new SW takes control
-      }
-    });
-
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      reg.onupdatefound = () => {
-        const worker = reg.installing;
-        worker.onstatechange = () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-            // New version available! Optional: Show a UI toast like "Update Available"
-            console.log("New version detected, updating...");
-          }
-        };
-      };
-    });
-  }
-    
- if ('serviceWorker' in navigator) {
+             if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then(reg => console.log('SW Registered'))
                     .catch(err => console.log('SW Failed', err));
             });
         }
-    
     // --- DATABASE STATE SCHEME ---
     let state = {
       businesses: [],
