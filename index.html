@@ -1010,7 +1010,8 @@
     
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js')
+// Path adjust karein
+navigator.serviceWorker.register('/onyxprototype/sw.js')
         .then(reg => console.log('SW Registered'))
         .catch(err => console.log('SW Failed', err));
     });
